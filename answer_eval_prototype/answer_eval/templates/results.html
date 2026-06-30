@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Results — AI Evaluator</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
+    header { background: #1e293b; border-bottom: 1px solid #334155; padding: 1.2rem 2rem; display: flex; align-items: center; gap: 1rem; }
+    header .logo { font-size: 1.5rem; font-weight: 700; color: #38bdf8; }
+    nav { margin-left: auto; display: flex; gap: 1.5rem; }
+    nav a { color: #94a3b8; text-decoration: none; font-size: 0.9rem; }
+    nav a:hover { color: #38bdf8; }
+
+    .container { max-width: 1000px; margin: 2rem auto; padding: 0 1.5rem; }
+    h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 1.5rem; color: #f1f5f9; }
+
+    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 2rem; }
+    .stat-card { background: #1e293b; border: 1px solid #334155; border-radius: 10px; padding: 1rem; text-align: center; }
+    .stat-num { font-size: 2rem; font-weight: 700; color: #38bdf8; }
+    .stat-label { font-size: 0.75rem; color: #64748b; margin-top: 2px; }
+
+    table { width: 100%; border-collapse: collapse; background: #1e293b; border-radius: 10px; overflow: hidden; }
+    th { background: #0f172a; padding: 0.75rem 1rem; text-align: left; font-size: 0.75rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
+    td { padding: 0.75rem 1rem; font-size: 0.85rem; border-top: 1px solid #334155; }
+    tr:hover td { background: #263248; }
+
+    .badge { padding: 2px 8px; border-radius: 10px; font-size: 0.7rem; font-weight: 600; }
+    .badge-high { background: #14532d; color: #4ade80; }
+    .badge-low { background: #7c2d12; color: #fb923c; }
+
+    .score-pill { font-weight: 700; color: #38bdf8; }
+    .empty { text-align: center; padding: 4rem; color: #64748b; }
+    .btn-back { display: inline-block; margin-top: 2rem; padding: 0.6rem 1.2rem; background: #0ea5e9; color: #fff; border-radius: 6px; text-decoration: none; font-size: 0.85rem; }
+  </style>
+</head>
+<body>
+<header>
+  <div class="logo">🎓 AI Evaluator</div>
+  <nav>
+    <a href="/">Evaluate</a>
+    <a href="/results">Results</a>
+    <a href="/teacher">Teacher Dashboard</a>
+  </nav>
+</header>
+
+<div class="container">
+  <h1>📊 Evaluation Results</h1>
+
+  {% if results %}
+  <div class="stats">
+    <div class="stat-card">
+      <div class="stat-num">{{ results|length }}</div>
+      <div class="stat-label">Papers Evaluated</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num">{{ "%.1f"|format(results|map(attribute='marks')|sum / results|length) }}</div>
+      <div class="stat-label">Average Score</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num">{{ results|selectattr('needs_review')|list|length }}</div>
+      <div class="stat-label">Flagged for Review</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num">{{ "%.0f"|format(results|map(attribute='similarity')|sum / results|length) }}%</div>
+      <div class="stat-label">Avg Similarity</div>
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Student</th>
+        <th>Question</th>
+        <th>Score</th>
+        <th>Similarity</th>
+        <th>Confidence</th>
+        <th>Time</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in results %}
+      <tr>
+        <td>{{ loop.index }}</td>
+        <td>{{ r.student_name }}</td>
+        <td>{{ r.question_id }}</td>
+        <td class="score-pill">{{ r.marks }} / {{ r.max_marks }}</td>
+        <td>{{ r.similarity }}%</td>
+        <td>
+          {% if r.confidence == 'HIGH' %}
+          <span class="badge badge-high">✅ High</span>
+          {% else %}
+          <span class="badge badge-low">⚠️ Low</span>
+          {% endif %}
+        </td>
+        <td style="color:#64748b; font-size:0.75rem;">{{ r.timestamp }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty">
+    <div style="font-size:3rem;">📭</div>
+    <p style="margin-top:1rem;">No evaluations yet. Upload an answer sheet to get started.</p>
+    <a href="/" class="btn-back">← Go to Evaluator</a>
+  </div>
+  {% endif %}
+
+  <a href="/" class="btn-back">← Evaluate Another</a>
+</div>
+</body>
+</html>

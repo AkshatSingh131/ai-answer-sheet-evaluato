@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Teacher Dashboard — AI Evaluator</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
+    header { background: #1e293b; border-bottom: 1px solid #334155; padding: 1.2rem 2rem; display: flex; align-items: center; gap: 1rem; }
+    header .logo { font-size: 1.5rem; font-weight: 700; color: #38bdf8; }
+    nav { margin-left: auto; display: flex; gap: 1.5rem; }
+    nav a { color: #94a3b8; text-decoration: none; font-size: 0.9rem; }
+    nav a:hover { color: #38bdf8; }
+
+    .container { max-width: 1000px; margin: 2rem auto; padding: 0 1.5rem; }
+
+    .section-title { font-size: 1.2rem; font-weight: 700; color: #f1f5f9; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; }
+    .badge-count { background: #7c2d12; color: #fb923c; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem; }
+
+    .flag-card {
+      background: #1e293b; border: 1px solid #334155; border-radius: 10px;
+      padding: 1.2rem; margin-bottom: 1rem;
+    }
+    .flag-card .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.8rem; }
+    .flag-card h3 { font-size: 0.95rem; color: #f1f5f9; }
+    .flag-card .meta { font-size: 0.75rem; color: #64748b; margin-top: 2px; }
+    .ai-score { font-size: 1.3rem; font-weight: 700; color: #fb923c; }
+
+    .extracted { background: #0f172a; border-radius: 6px; padding: 0.7rem; font-size: 0.82rem; color: #cbd5e1; margin-bottom: 0.8rem; max-height: 80px; overflow-y: auto; }
+    .feedback-text { font-size: 0.82rem; color: #94a3b8; margin-bottom: 0.8rem; }
+
+    .override-form { display: flex; gap: 0.5rem; align-items: center; }
+    .override-form input { width: 80px; padding: 0.4rem; background: #0f172a; border: 1px solid #334155; border-radius: 6px; color: #e2e8f0; font-size: 0.85rem; }
+    .override-form button { padding: 0.4rem 0.8rem; background: #0ea5e9; color: #fff; border: none; border-radius: 6px; font-size: 0.82rem; cursor: pointer; }
+    .override-form button:hover { background: #0284c7; }
+    .override-form .approve-btn { background: #15803d; }
+    .override-form .approve-btn:hover { background: #166534; }
+
+    .empty { text-align: center; padding: 3rem; color: #64748b; }
+    .divider { border: none; border-top: 1px solid #334155; margin: 2rem 0; }
+
+    .info-box { background: #1e3a5f; border: 1px solid #0ea5e9; border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem; font-size: 0.85rem; color: #bfdbfe; }
+  </style>
+</head>
+<body>
+<header>
+  <div class="logo">🎓 AI Evaluator</div>
+  <nav>
+    <a href="/">Evaluate</a>
+    <a href="/results">Results</a>
+    <a href="/teacher">Teacher Dashboard</a>
+  </nav>
+</header>
+
+<div class="container">
+
+  <div class="info-box">
+    🤖 <strong>Human-in-the-loop:</strong> The AI auto-scores high-confidence answers. Low-confidence matches are flagged here for your review before marks are finalized.
+  </div>
+
+  <div class="section-title">
+    ⚠️ Flagged for Review
+    {% if flagged %}
+    <span class="badge-count">{{ flagged|length }}</span>
+    {% endif %}
+  </div>
+
+  {% if flagged %}
+    {% for r in flagged %}
+    <div class="flag-card">
+      <div class="header">
+        <div>
+          <h3>{{ r.student_name }} — {{ r.question_id }}</h3>
+          <div class="meta">{{ r.question }} | {{ r.timestamp }}</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:0.7rem; color:#64748b; margin-bottom:2px;">AI Score</div>
+          <div class="ai-score">{{ r.marks }} / {{ r.max_marks }}</div>
+        </div>
+      </div>
+      <div style="font-size:0.7rem; color:#64748b; margin-bottom:4px;">EXTRACTED TEXT</div>
+      <div class="extracted">{{ r.extracted_text }}</div>
+      <div class="feedback-text">💬 {{ r.feedback }}</div>
+      <form method="POST" action="/teacher/approve/{{ loop.index0 }}" class="override-form">
+        <span style="font-size:0.8rem; color:#94a3b8;">Override marks:</span>
+        <input type="number" name="marks" min="0" max="{{ r.max_marks }}" step="0.5" placeholder="{{ r.marks }}">
+        <button type="submit" class="override-form approve-btn">✅ Approve & Save</button>
+      </form>
+    </div>
+    {% endfor %}
+  {% else %}
+  <div class="empty">
+    <div style="font-size:3rem;">✅</div>
+    <p style="margin-top:1rem;">No papers flagged for review. All evaluations are high-confidence.</p>
+  </div>
+  {% endif %}
+
+  <hr class="divider">
+
+  <div class="section-title">📋 All Evaluated Papers</div>
+
+  {% if all_results %}
+  <table style="width:100%; border-collapse:collapse; background:#1e293b; border-radius:10px; overflow:hidden;">
+    <thead>
+      <tr>
+        <th style="background:#0f172a; padding:0.7rem 1rem; text-align:left; font-size:0.75rem; color:#64748b; text-transform:uppercase;">Student</th>
+        <th style="background:#0f172a; padding:0.7rem 1rem; text-align:left; font-size:0.75rem; color:#64748b; text-transform:uppercase;">Q</th>
+        <th style="background:#0f172a; padding:0.7rem 1rem; text-align:left; font-size:0.75rem; color:#64748b; text-transform:uppercase;">Score</th>
+        <th style="background:#0f172a; padding:0.7rem 1rem; text-align:left; font-size:0.75rem; color:#64748b; text-transform:uppercase;">Status</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for r in all_results %}
+    <tr>
+      <td style="padding:0.7rem 1rem; font-size:0.85rem; border-top:1px solid #334155;">{{ r.student_name }}</td>
+      <td style="padding:0.7rem 1rem; font-size:0.85rem; border-top:1px solid #334155;">{{ r.question_id }}</td>
+      <td style="padding:0.7rem 1rem; font-size:0.85rem; border-top:1px solid #334155; font-weight:700; color:#38bdf8;">{{ r.marks }}/{{ r.max_marks }}</td>
+      <td style="padding:0.7rem 1rem; font-size:0.85rem; border-top:1px solid #334155;">
+        {% if r.get('teacher_reviewed') %}
+        <span style="color:#4ade80; font-size:0.75rem;">✅ Teacher Reviewed</span>
+        {% elif r.needs_review %}
+        <span style="color:#fb923c; font-size:0.75rem;">⚠️ Pending Review</span>
+        {% else %}
+        <span style="color:#4ade80; font-size:0.75rem;">✅ Auto-scored</span>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty">No evaluations yet.</div>
+  {% endif %}
+
+</div>
+</body>
+</html>
